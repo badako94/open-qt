@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나눔QT</title>
+    <!-- 디자인 라이브러리 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CSV 해독 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- 최고급 한글 폰트 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        body { font-family: "Pretendard Variable", Pretendard, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 pb-24 leading-relaxed">
+
+    <!-- 상단 바 -->
+    <header class="bg-emerald-800 text-white p-4 shadow-md sticky top-0 z-50">
+      <div class="max-w-2xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-black tracking-tight flex items-center gap-1.5">
+          <span>🕊️</span> 나눔QT
+        </h1>
+        <div class="flex items-center gap-1.5 bg-emerald-900/80 px-2.5 py-1 rounded-lg border border-emerald-700">
+          <span class="text-xs text-emerald-200 font-bold">날짜 조회:</span>
+          <input type="date" id="qt-date" onchange="onDateChange()" class="bg-transparent text-white text-xs font-bold cursor-pointer focus:outline-none"/>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4 space-y-6 mt-2">
+      
+      <!-- 로딩 안내창 -->
+      <div id="loading-box" class="bg-white p-10 rounded-2xl shadow-sm border border-slate-200 text-center space-y-2">
+         <p class="font-bold text-emerald-800">말씀과 찬양 데이터를 불러오는 중입니다⏳</p>
+         <p class="text-xs text-slate-400">잠시만 기다려주세요...</p>
+      </div>
+
+      <div id="app-content" class="space-y-6 hidden">
+        
+        <!-- 1단계: 찬양 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center space-x-2 text-emerald-800 font-bold mb-3">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">1단계</span>
+            <h2 class="text-base font-bold">찬양 (마음 열기)</h2>
+          </div>
+          <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-100/80 text-center space-y-1.5">
+            <h3 id="praise-title" class="font-black text-emerald-950 text-base"></h3>
+            <p id="praise-lyric" class="text-xs text-emerald-800 font-medium"></p>
+          </div>
+        </section>
+
+        <!-- 2단계: 말씀 읽기 (하루 20절 황금밸런스) -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+              <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">2단계</span>
+              <h2 class="text-base font-bold">말씀 읽기 및 씨앗 채집</h2>
+            </div>
+            <span id="passage-range" class="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200"></span>
+          </div>
+          <p class="text-xs text-slate-500 mb-3">오늘의 본문(20절)입니다. 천천히 읽으시며 마음에 와닿는 구절을 클릭해 씨앗 보관함에 담아보세요.</p>
+
+          <div id="verses-container" class="max-h-80 overflow-y-auto space-y-1 p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm"></div>
+
+          <!-- 채집된 씨앗 -->
+          <div class="mt-5 pt-4 border-t border-slate-100">
+            <h3 class="text-xs font-bold text-emerald-900 mb-2">📌 오늘 붙잡은 말씀 씨앗</h3>
+            <div id="seeds-container" class="space-y-1.5"></div>
+          </div>
+        </section>
+
+        <!-- 3단계: 묵상 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">3단계</span>
+            <h2 class="text-base font-bold">묵상</h2>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">이 말씀을 통해 하시고자 하는 말씀이 무엇이라고 생각하나요?</p>
+          <textarea id="step3-input" oninput="saveData()" rows="3" class="w-full border rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50" placeholder="내용을 입력하세요..."></textarea>
+        </section>
+
+        <!-- 4단계: 적용 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">4단계</span>
+            <h2 class="text-base font-bold">적용</h2>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">내 삶에 어떻게 적용 할 수 있을까요?</p>
+          <textarea id="step4-input" oninput="saveData()" rows="3" class="w-full border rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50" placeholder="내용을 입력하세요..."></textarea>
+        </section>
+
+        <!-- 5단계: 기록 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">5단계</span>
+            <h2 class="text-base font-bold">기록</h2>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">이 말씀에서 느껴지는 바는 무엇인가요?</p>
+          <textarea id="step5-input" oninput="saveData()" rows="3" class="w-full border rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50" placeholder="내용을 입력하세요..."></textarea>
+        </section>
+
+        <!-- 6단계: 기도 하기 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-800 font-bold">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full">6단계</span>
+            <h2 class="text-base font-bold">기도 하기</h2>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">오늘의 기도를 적고 기도해봅시다!</p>
+          <textarea id="step6-input" oninput="saveData()" rows="3" class="w-full border rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50" placeholder="내용을 입력하세요..."></textarea>
+        </section>
+
+        <!-- 7단계: 요약 카드 -->
+        <section class="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl shadow-sm space-y-3">
+          <div class="flex items-center space-x-2 text-emerald-950 font-bold">
+            <span class="bg-emerald-200 text-emerald-950 text-xs px-2.5 py-1 rounded-full">7단계</span>
+            <h2 class="text-base font-bold">오늘의 QT요약 카드 (나눔)</h2>
+          </div>
+          <p class="text-xs text-emerald-800 font-medium">아래 버튼을 누르면 오늘의 묵상이 카톡 공유에 최적화된 형태로 복사됩니다.</p>
+
+          <div id="summary-preview" class="bg-white p-4 rounded-xl border border-emerald-200 text-xs space-y-2 select-all text-slate-700 leading-normal"></div>
+
+          <button onclick="copySummary()" class="w-full bg-emerald-800 text-white py-3 rounded-xl text-sm font-bold hover:bg-emerald-900 transition flex items-center justify-center gap-1.5 shadow-md">
+            📋 카카오톡 공유용 요약 복사하기
+          </button>
+        </section>
+      </div>
+
+    </main>
+
+    <script>
+      let bibleData = [];
+      let praiseData = [];
+      let currentVerses = [];
+      let seeds = [];
+
+      // 1. 날짜 세팅 (오늘 날짜 자동 인식)
+      const todayInput = document.getElementById('qt-date');
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      const todayStr = new Date(now.getTime() - offset).toISOString().split('T')[0];
+      todayInput.value = todayStr;
+
+      let isBibleDone = false; let isPraiseDone = false;
+
+      // 성경 데이터 로딩
+      Papa.parse("bible.csv", {
+        header: true, download: true,
+        complete: function(res) {
+          bibleData = res.data.filter(r => r['색인'] && r['장'] && r['절'] && (r['내용'] || r['내    용']));
+          isBibleDone = true; checkInit();
+        }
+      });
+
+      // 찬양 데이터 로딩
+      Papa.parse("praise.csv", {
+        header: false, download: true,
+        complete: function(res) {
+          praiseData = res.data.slice(2).filter(r => r && r[2] && r[3]);
+          isPraiseDone = true; checkInit();
+        }
+      });
+
+      function checkInit() {
+        if(isBibleDone && isPraiseDone) {
+          document.getElementById('loading-box').classList.add('hidden');
+          document.getElementById('app-content').classList.remove('hidden');
+          processDate();
+        }
+      }
+
+      function onDateChange() { processDate(); }
+
+      function processDate() {
+        const targetDateStr = document.getElementById('qt-date').value;
+        const parts = targetDateStr.split('-');
+        
+        // 날짜 계산의 절대 기준점 (2025년 1월 1일 자정)
+        const targetUTC = Date.UTC(parts[0], parts[1]-1, parts[2]);
+        const baseUTC = Date.UTC(2025, 0, 1);
+        const dayDifference = Math.floor(Math.abs((targetUTC - baseUTC) / (1000 * 60 * 60 * 24)));
+
+        // --- A. 말씀 분배기 (하루 20절 고정 로직) ---
+        const versesPerDay = 20; 
+        const startIdx = (dayDifference * versesPerDay) % bibleData.length;
+        
+        currentVerses = [];
+        for(let i = 0; i < versesPerDay; i++) {
+          const actualIdx = (startIdx + i) % bibleData.length;
+          currentVerses.push(bibleData[actualIdx]);
+        }
+        document.getElementById('passage-range').innerText = getRangeStr(currentVerses);
+
+        // --- B. 찬양 무중복 점프 알고리즘 ---
+        const pIdx = (dayDifference * 103 + 401) % praiseData.length;
+        const targetSong = praiseData[pIdx] || praiseData[0];
+
+        document.getElementById('praise-title').innerText = targetSong[2];
+        document.getElementById('praise-lyric').innerText = `"${targetSong[3]}..."`;
+
+        loadSavedData(targetDateStr);
+      }
+
+      function getRangeStr(list) {
+        if(!list || list.length === 0) return "본문 없음";
+        const f = list[0]; const l = list[list.length-1];
+        if(f['색인'] === l['색인']) {
+          if(f['장'] === l['장']) return `${f['색인']} ${f['장']}장 ${f['절']}절 ~ ${l['절']}절`;
+          return `${f['색인']} ${f['장']}장 ${f['절']}절 ~ ${l['장']}장 ${l['절']}절`;
+        }
+        return `${f['색인']} ${f['장']}장 ${f['절']}절 ~ ${l['색인']} ${l['장']}장 ${l['절']}절`;
+      }
+
+      function renderVerses() {
+        const box = document.getElementById('verses-container');
+        box.innerHTML = currentVerses.map(v => {
+          const ref = `${v['색인']} ${v['장']}:${v['절']}`;
+          const txt = v['내용'] || v['내    용'] || '';
+          const isPicked = seeds.some(s => s.ref === ref);
+          return `
+            <div onclick="toggleSeed('${ref}')" 
+                 class="p-2 rounded-xl cursor-pointer transition flex gap-2 hover:bg-emerald-100/50 ${isPicked ? 'bg-amber-100 font-bold text-emerald-950 border border-amber-300' : ''}">
+              <span class="text-xs font-bold text-emerald-700 shrink-0 mt-0.5">${v['절']}</span>
+              <p class="flex-1">${txt}</p>
+            </div>`;
+        }).join('');
+      }
+
+      function toggleSeed(ref) {
+        const idx = seeds.findIndex(s => s.ref === ref);
+        if(idx > -1) {
+          seeds.splice(idx, 1);
+        } else {
+          const target = currentVerses.find(v => `${v['색인']} ${v['장']}:${v['절']}` === ref);
+          if(target) seeds.push({ ref, txt: target['내용'] || target['내    용'] || '' });
+        }
+        renderVerses(); renderSeeds(); saveData();
+      }
+
+      function renderSeeds() {
+        const box = document.getElementById('seeds-container');
+        if(seeds.length === 0) { box.innerHTML = '<p class="text-xs text-slate-400 italic">위 본문 구절을 마우스로 클릭하면 여기에 말씀 씨앗이 담깁니다.</p>'; return; }
+        box.innerHTML = seeds.map(s => `
+          <div class="flex justify-between items-center bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-xs mb-1">
+            <span class="font-bold text-emerald-950">「${s.ref}」 ${s.txt}</span>
+            <button onclick="toggleSeed('${s.ref}')" class="text-slate-400 hover:text-red-500 ml-2 font-bold px-1">✕</button>
+          </div>`).join('');
+      }
+
+      function saveData() {
+        const curDate = document.getElementById('qt-date').value;
+        const obj = {
+          seeds,
+          s3: document.getElementById('step3-input').value,
+          s4: document.getElementById('step4-input').value,
+          s5: document.getElementById('step5-input').value,
+          s6: document.getElementById('step6-input').value
+        };
+        localStorage.setItem('nanumqt_' + curDate, JSON.stringify(obj));
+        updateCard();
+      }
+
+      function loadSavedData(dateKey) {
+        seeds = [];
+        document.getElementById('step3-input').value = '';
+        document.getElementById('step4-input').value = '';
+        document.getElementById('step5-input').value = '';
+        document.getElementById('step6-input').value = '';
+
+        try {
+          const raw = localStorage.getItem('nanumqt_' + dateKey);
+          if(raw) {
+            const val = JSON.parse(raw);
+            if(val.seeds) seeds = val.seeds;
+            if(val.s3) document.getElementById('step3-input').value = val.s3;
+            if(val.s4) document.getElementById('step4-input').value = val.s4;
+            if(val.s5) document.getElementById('step5-input').value = val.s5;
+            if(val.s6) document.getElementById('step6-input').value = val.s6;
+          }
+        } catch(e){}
+        renderVerses(); renderSeeds(); updateCard();
+      }
+
+      function updateCard() {
+        const dateStr = document.getElementById('qt-date').value;
+        const rangeStr = document.getElementById('passage-range').innerText;
+        const s3 = document.getElementById('step3-input').value.trim();
+        const s4 = document.getElementById('step4-input').value.trim();
+        const s5 = document.getElementById('step5-input').value.trim();
+        const s6 = document.getElementById('step6-input').value.trim();
+        const box = document.getElementById('summary-preview');
+
+        let h = `<div class="font-bold text-emerald-900 border-b pb-1.5 mb-2.5">[${dateStr} 나눔QT]</div>`;
+        h += `<div class="mb-2"><b class="text-emerald-950">📖 오늘의 말씀:</b> ${rangeStr}</div>`;
+        if(seeds.length) h += `<div class="mb-2"><b class="text-emerald-950">🌱 붙잡은 말씀:</b><br/>` + seeds.map(s => `"${s.txt}" (${s.ref})`).join('<br/>') + `</div>`;
+        if(s3) h += `<div class="mb-2"><b class="text-emerald-950">💭 3단계(묵상):</b><br/>${s3}</div>`;
+        if(s4) h += `<div class="mb-2"><b class="text-emerald-950">🏃 4단계(적용):</b><br/>${s4}</div>`;
+        if(s5) h += `<div class="mb-2"><b class="text-emerald-950">✍️ 5단계(기록):</b><br/>${s5}</div>`;
+        if(s6) h += `<div><b class="text-emerald-950">🙏 6단계(기도):</b><br/>${s6}</div>`;
+        box.innerHTML = h;
+      }
+
+      function copySummary() {
+        const box = document.getElementById('summary-preview');
+        navigator.clipboard.writeText(box.innerText).then(() => alert("복사되었습니다!\n카카오톡 대화창에 '붙여넣기' 해보세요.")).catch(() => alert("복사 실패. 요약창의 글자를 직접 드래그해서 복사해주세요."));
+      }
+    </script>
+</body>
+</html>
