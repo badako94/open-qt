@@ -6,66 +6,74 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-stone-50 text-stone-900 pb-20">
-    <div class="max-w-xl mx-auto p-4 space-y-8">
+<body class="bg-stone-50 text-stone-900 pb-20 font-sans">
+    <div class="max-w-xl mx-auto p-4 space-y-6">
         <header class="text-center py-6">
             <h1 class="text-3xl font-black text-emerald-900">🕊️ 나눔QT</h1>
             <input type="date" id="qt-date" onchange="render()" class="mt-2 bg-transparent text-sm font-bold border-b border-stone-300">
         </header>
 
-        <div id="loader" class="text-center py-20 text-emerald-700 font-bold">데이터를 불러오는 중입니다...</div>
-
-        <div id="ui" class="hidden space-y-8">
-            <section class="bg-white p-6 rounded-3xl shadow-sm border border-emerald-100">
+        <div id="ui" class="space-y-6">
+            <!-- 1단계: 찬양 -->
+            <section class="bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">1단계 : 찬양하기</h2>
-                <div id="praise-box" class="space-y-1"></div>
+                <div id="praise-box" class="font-bold text-lg text-stone-900">로딩 중...</div>
             </section>
 
-            <section class="bg-white p-6 rounded-3xl shadow-sm border border-emerald-100">
+            <!-- 2단계: 말씀 -->
+            <section class="bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">2단계 : 말씀 읽기</h2>
                 <div id="passage-range" class="font-bold text-lg mb-4 text-stone-700"></div>
-                <div id="verses-box" class="text-stone-700 leading-relaxed space-y-2"></div>
+                <div id="verses-box" class="text-stone-700 leading-relaxed space-y-2 text-sm"></div>
             </section>
 
-            <section class="space-y-4">
+            <!-- 3~6단계 -->
+            <div class="space-y-3">
                 <h2 class="text-xs font-bold text-emerald-600 tracking-widest uppercase">3~6단계 : 묵상과 기도</h2>
-                <textarea id="s3" class="w-full p-4 rounded-2xl border bg-white" rows="2" placeholder="3. 묵상 - 이 말씀을 통해 하시고자 하는 말씀이 무엇이라고 생각하나요?"></textarea>
-                <textarea id="s4" class="w-full p-4 rounded-2xl border bg-white" rows="2" placeholder="4. 적용 - 내 삶에 어떻게 적용할 수 있을까요?"></textarea>
-                <textarea id="s5" class="w-full p-4 rounded-2xl border bg-white" rows="2" placeholder="5. 기록 - 이 말씀에서 느껴지는 바는 무엇인가요?"></textarea>
-                <textarea id="s6" class="w-full p-4 rounded-2xl border bg-white" rows="2" placeholder="6. 기도 - 오늘 나만의 기도를 적어보세요."></textarea>
-            </section>
+                <textarea id="s3" class="w-full p-4 rounded-2xl border" rows="2" placeholder="3. 묵상 - 이 말씀을 통해 하시고자 하는 말씀이 무엇이라고 생각하나요?"></textarea>
+                <textarea id="s4" class="w-full p-4 rounded-2xl border" rows="2" placeholder="4. 적용 - 내 삶에 어떻게 적용할 수 있을까요?"></textarea>
+                <textarea id="s5" class="w-full p-4 rounded-2xl border" rows="2" placeholder="5. 기록 - 이 말씀에서 느껴지는 바는 무엇인가요?"></textarea>
+                <textarea id="s6" class="w-full p-4 rounded-2xl border" rows="2" placeholder="6. 기도 - 오늘 나만의 기도를 적어보세요."></textarea>
+            </div>
 
+            <!-- 7단계 -->
             <button onclick="copy()" class="w-full bg-emerald-900 text-white p-5 rounded-2xl font-bold hover:bg-emerald-800 transition">📋 7단계 : 오늘의 QT 공유하기</button>
-            
-            <footer class="text-center text-stone-400 text-xs py-4">
-                Made by BAE JUN HO
-            </footer>
+            <footer class="text-center text-stone-400 text-xs py-4">Made by BAE JUN HO</footer>
         </div>
     </div>
 
     <script>
         let B = [], P = [];
-        Promise.all([
-            new Promise(r => Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/bible.csv", { download: true, complete: r })),
-            new Promise(r => Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/praise.csv", { download: true, complete: r }))
-        ]).then(res => {
-            B = res[0].data.filter(r => r.length >= 5);
-            P = res[1].data.filter(r => r.length >= 3);
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('ui').classList.remove('hidden');
-            document.getElementById('qt-date').value = new Date().toISOString().split('T')[0];
-            render();
-        });
+        // 데이터를 안정적으로 로드합니다.
+        Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/bible.csv", { download: true, complete: res => { B = res.data; render(); } });
+        Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/praise.csv", { download: true, complete: res => { P = res.data; render(); } });
 
         function render() {
-            const d = new Date(document.getElementById('qt-date').value);
+            if(B.length < 2 || P.length < 2) return;
+            const dateVal = document.getElementById('qt-date').value || new Date().toISOString().split('T')[0];
+            document.getElementById('qt-date').value = dateVal;
+            const d = new Date(dateVal);
             const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
             
+            // 찬양
             const p = P[seed % P.length];
-            document.getElementById('praise-box').innerHTML = `<div class="text-lg font-bold text-stone-900">${p[1]}</div><div class="text-sm text-stone-500">${p[2]}</div>`;
+            document.getElementById('praise-box').innerHTML = `<div>${p[1]}</div><div class="text-sm text-stone-500 font-normal">${p[2]}</div>`;
             
-            const start = (seed * 12345) % (B.length - 15);
-            // 10~15절 사이로 동적 조절
+            // 말씀 (10~15절 분량 랜덤 시작)
+            const filteredB = B.filter(r => r.length >= 5);
+            const start = (seed * 12345) % (filteredB.length - 15);
             const count = 10 + (seed % 6);
-            const verses = B.slice(start, start + count);
-            document.getElementById('passage-range').innerText = `${verses[0][3]} ~ ${verses[count-
+            const verses = filteredB.slice(start, start + count);
+            
+            document.getElementById('passage-range').innerText = `${verses[0][3]} ~ ${verses[count-1][2]}절`;
+            document.getElementById('verses-box').innerHTML = verses.map(v => `<div><span class="text-emerald-700 font-bold mr-2">${v[2]}</span>${v[4]}</div>`).join('');
+        }
+
+        function copy() {
+            const range = document.getElementById('passage-range').innerText;
+            const t = `[나눔QT] ${document.getElementById('qt-date').value}\n📖 말씀 범위: ${range}\n\n3. 묵상: ${s3.value}\n4. 적용: ${s4.value}\n5. 기록: ${s5.value}\n6. 기도: ${s6.value}\n\n- Made by BAE JUN HO`;
+            navigator.clipboard.writeText(t); alert('요약 카드가 복사되었습니다!');
+        }
+    </script>
+</body>
+</html>
