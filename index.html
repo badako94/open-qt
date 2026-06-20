@@ -19,25 +19,31 @@
         </header>
 
         <div id="ui" class="space-y-8">
+            <!-- 1단계: 찬양 -->
             <section class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">1단계 : 찬양하기</h2>
-                <div id="praise-box" class="font-bold text-xl md:text-2xl text-stone-900">로딩 중...</div>
+                <a id="praise-link" href="#" target="_blank" class="block hover:opacity-70 transition">
+                    <div id="praise-title" class="font-bold text-xl md:text-2xl text-emerald-900 underline underline-offset-4">로딩 중...</div>
+                    <div id="praise-singer" class="text-base text-stone-500 font-normal mt-1"></div>
+                </a>
             </section>
 
+            <!-- 2단계: 말씀 -->
             <section class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">2단계 : 말씀 읽기</h2>
                 <div id="passage-range" class="font-bold text-xl mb-4 text-stone-700"></div>
                 <div id="verses-box" class="text-stone-700 leading-relaxed space-y-3 text-base md:text-lg content-text"></div>
             </section>
 
-            <div class="space-y-4">
-                <h2 class="text-xs font-bold text-emerald-600 tracking-widest uppercase">3~7단계 : 묵상과 기록</h2>
-                <textarea id="s3" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="3. 묵상 - 무엇을 말씀하시나요?"></textarea>
-                <textarea id="s4" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="4. 적용 - 어떻게 실천할까요?"></textarea>
-                <textarea id="s5" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="5. 기록 - 무엇이 느껴지나요?"></textarea>
-                <textarea id="s6" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="6. 기도 - 하나님께 드리는 기도"></textarea>
-                <textarea id="s7" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="7. 감사일기 : 오늘의 감사일기를 써봅시다!"></textarea>
-            </div>
+            <!-- 3단계: 묵상과 기록 -->
+            <section class="space-y-4">
+                <h2 class="text-xs font-bold text-emerald-600 tracking-widest uppercase">3단계 : 묵상과 기록</h2>
+                <textarea id="s1" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="1. 묵상 - 이 말씀을 통해 하시고자 하는 말씀이 무엇일까요?"></textarea>
+                <textarea id="s2" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="2. 적용 - 내 삶에 어떻게 적용 할 수 있을까요?"></textarea>
+                <textarea id="s3" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="3. 교감 - 이 말씀에서 느껴지는게 있나요?"></textarea>
+                <textarea id="s4" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="4. 기도 - 오늘의 기도 제목은 무엇인가요?"></textarea>
+                <textarea id="s5" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="5. 감사일기 - 오늘의 감사 할 일들을 남겨보아요!"></textarea>
+            </section>
 
             <button onclick="copy()" class="w-full bg-emerald-900 text-white p-6 rounded-2xl font-bold text-lg hover:bg-emerald-800 transition">📋 오늘의 QT 공유하기</button>
             <footer class="text-center text-stone-400 text-sm py-4">Made by BAE JUN HO</footer>
@@ -49,7 +55,6 @@
         Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/bible.csv", { download: true, complete: res => { B = res.data; render(); } });
         Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/praise.csv", { download: true, complete: res => { P = res.data; render(); } });
 
-        // 페이지 로드 시 한국 시간 기준 오늘 날짜 자동 설정
         window.onload = () => {
             const today = new Date();
             const offset = today.getTimezoneOffset() * 60000;
@@ -60,15 +65,15 @@
 
         function render() {
             if(B.length < 2 || P.length < 2) return;
-            
-            // 선택된 날짜 가져오기 (년, 월, 일을 직접 추출하여 시간대 오차 방지)
             const dateVal = document.getElementById('qt-date').value;
             const parts = dateVal.split('-');
             const d = new Date(parts[0], parts[1] - 1, parts[2]);
             const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
             
             const p = P[seed % P.length];
-            document.getElementById('praise-box').innerHTML = `<div>${p[1]}</div><div class="text-base text-stone-500 font-normal mt-1">${p[2]}</div>`;
+            document.getElementById('praise-title').innerText = p[1] + " 🔍";
+            document.getElementById('praise-singer').innerText = p[2];
+            document.getElementById('praise-link').href = `https://www.youtube.com/results?search_query=${encodeURIComponent(p[1])}`;
             
             const filteredB = B.filter(r => r.length >= 5);
             const start = (seed * 12345) % (filteredB.length - 15);
@@ -81,7 +86,7 @@
 
         function copy() {
             const range = document.getElementById('passage-range').innerText;
-            const t = `[나눔QT] ${document.getElementById('qt-date').value}\n📖 말씀 범위: ${range}\n\n3. 묵상: ${s3.value}\n4. 적용: ${s4.value}\n5. 기록: ${s5.value}\n6. 기도: ${s6.value}\n7. 감사일기: ${s7.value}`;
+            const t = `[나눔QT] ${document.getElementById('qt-date').value}\n📖 말씀 범위: ${range}\n\n1. 묵상: ${s1.value}\n2. 적용: ${s2.value}\n3. 교감: ${s3.value}\n4. 기도: ${s4.value}\n5. 감사일기: ${s5.value}`;
             navigator.clipboard.writeText(t); 
             alert('요약카드가 복사되었습니다. 붙여넣기 하세요!');
         }
