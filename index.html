@@ -2,44 +2,49 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나눔QT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
-    <style>body { font-family: "Pretendard Variable", Pretendard, sans-serif; }</style>
 </head>
-<body class="bg-slate-100 text-slate-800 pb-24">
+<body class="bg-slate-100 p-4">
+    <div id="app" class="max-w-2xl mx-auto space-y-4">
+        <h1 class="text-2xl font-bold">🕊️ 나눔QT</h1>
+        <div id="loader" class="text-center p-10 font-bold">데이터 불러오는 중...</div>
+        <div id="main-ui" class="hidden space-y-4">
+            <input type="date" id="qt-date" onchange="renderApp()" class="w-full p-2 border rounded">
+            <div id="praise-box" class="bg-white p-4 rounded-lg border shadow-sm"></div>
+            <div id="verses-box" class="bg-white p-4 rounded-lg border shadow-sm h-64 overflow-y-auto text-sm"></div>
+        </div>
+    </div>
 
-    <header class="bg-emerald-800 text-white p-4 shadow-md sticky top-0 z-50">
-      <div class="max-w-2xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-black">🕊️ 나눔QT</h1>
-        <input type="date" id="qt-date" onchange="processDate()" class="bg-emerald-900 text-white text-xs font-bold p-1 rounded"/>
-      </div>
-    </header>
+    <script>
+        let bible = [], praise = [];
+        
+        // 파일 로딩
+        async function loadFiles() {
+            const b = await new Promise(r => Papa.parse("bible.csv", { download: true, complete: r }));
+            const p = await new Promise(r => Papa.parse("praise.csv", { download: true, complete: r }));
+            bible = b.data.filter(r => r.length >= 5);
+            praise = p.data.filter(r => r.length >= 3);
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('main-ui').classList.remove('hidden');
+            renderApp();
+        }
 
-    <main class="max-w-2xl mx-auto p-4 space-y-6">
-      <div id="loading" class="text-center py-10 font-bold text-emerald-800">데이터 로딩 중...</div>
-      <div id="content" class="space-y-6 hidden">
-        <section class="bg-white p-5 rounded-2xl border">
-          <h2 class="text-emerald-800 font-bold mb-2">1단계: 찬양</h2>
-          <div class="bg-emerald-50 p-4 rounded-xl text-center"><h3 id="praise-title" class="font-bold"></h3><p id="praise-lyric" class="text-xs"></p></div>
-        </section>
-        <section class="bg-white p-5 rounded-2xl border">
-          <h2 class="text-emerald-800 font-bold mb-2">2단계: 말씀 (20절)</h2>
-          <div id="passage-range" class="text-xs font-bold text-emerald-700 mb-2"></div>
-          <div id="verses-container" class="space-y-1 text-sm bg-slate-50 p-3 rounded-xl h-64 overflow-y-auto"></div>
-          <div id="seeds-container" class="mt-3 space-y-1"></div>
-        </section>
-        <section class="bg-white p-5 rounded-2xl border space-y-2">
-            <h2 class="text-emerald-800 font-bold">3~6단계: 묵상, 적용, 기록, 기도</h2>
-            <textarea id="s3" oninput="saveData()" class="w-full border p-2 text-sm" placeholder="3. 묵상"></textarea>
-            <textarea id="s4" oninput="saveData()" class="w-full border p-2 text-sm" placeholder="4. 적용"></textarea>
-            <textarea id="s5" oninput="saveData()" class="w-full border p-2 text-sm" placeholder="5. 기록"></textarea>
-            <textarea id="s6" oninput="saveData()" class="w-full border p-2 text-sm" placeholder="6. 기도"></textarea>
-        </section>
-        <section class="bg-emerald-50 p-5 rounded-2xl border">
-          <h2 class="text-emerald-900 font-bold mb-2">7단계: 요약 카드</h2>
-          <div id="summary-preview" class="bg-white p-3 text-xs mb-3 border"></div>
-          <button onclick="copySummary()" class="w-full bg-emerald-800 text-white p-3 rounded-xl font-bold">📋 공유용 텍스트 복사</button>
-        </section>
+        function renderApp() {
+            const d = new Date(document.getElementById('qt-date').value || new Date());
+            const day = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+            
+            // 찬양
+            const p = praise[(day * 103 + 401) % praise.length];
+            document.getElementById('praise-box').innerHTML = `<div class="font-bold">${p[1]}</div><div class="text-xs text-gray-500">${p[2]}</div>`;
+            
+            // 말씀 (20절)
+            const start = (day * 20) % bible.length;
+            document.getElementById('verses-box').innerHTML = bible.slice(start, start+20).map(v => `<div>${v[3]} : ${v[4]}</div>`).join('');
+        }
+        
+        loadFiles();
+    </script>
+</body>
+</html>
