@@ -19,20 +19,17 @@
         </header>
 
         <div id="ui" class="space-y-8">
-            <!-- 1단계: 찬양 -->
             <section class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">1단계 : 찬양하기</h2>
                 <div id="praise-box" class="font-bold text-xl md:text-2xl text-stone-900">로딩 중...</div>
             </section>
 
-            <!-- 2단계: 말씀 -->
             <section class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100">
                 <h2 class="text-xs font-bold text-emerald-600 mb-3 tracking-widest uppercase">2단계 : 말씀 읽기</h2>
                 <div id="passage-range" class="font-bold text-xl mb-4 text-stone-700"></div>
                 <div id="verses-box" class="text-stone-700 leading-relaxed space-y-3 text-base md:text-lg content-text"></div>
             </section>
 
-            <!-- 3~7단계 -->
             <div class="space-y-4">
                 <h2 class="text-xs font-bold text-emerald-600 tracking-widest uppercase">3~7단계 : 묵상과 기록</h2>
                 <textarea id="s3" class="w-full p-4 md:p-6 rounded-2xl border text-base md:text-lg" rows="2" placeholder="3. 묵상 - 무엇을 말씀하시나요?"></textarea>
@@ -52,11 +49,22 @@
         Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/bible.csv", { download: true, complete: res => { B = res.data; render(); } });
         Papa.parse("https://raw.githubusercontent.com/badako94/open-qt/main/praise.csv", { download: true, complete: res => { P = res.data; render(); } });
 
+        // 페이지 로드 시 한국 시간 기준 오늘 날짜 자동 설정
+        window.onload = () => {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            const koreaTime = new Date(today.getTime() - offset);
+            document.getElementById('qt-date').value = koreaTime.toISOString().split('T')[0];
+            render();
+        };
+
         function render() {
             if(B.length < 2 || P.length < 2) return;
-            const dateVal = document.getElementById('qt-date').value || new Date().toISOString().split('T')[0];
-            document.getElementById('qt-date').value = dateVal;
-            const d = new Date(dateVal);
+            
+            // 선택된 날짜 가져오기 (년, 월, 일을 직접 추출하여 시간대 오차 방지)
+            const dateVal = document.getElementById('qt-date').value;
+            const parts = dateVal.split('-');
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
             const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
             
             const p = P[seed % P.length];
